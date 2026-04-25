@@ -48,7 +48,7 @@ export default function App() {
     <main className="app-shell">
       <header className="app-header">
         <div>
-          <p className="eyebrow">Portfolio RAG MVP</p>
+          <p className="eyebrow">Document QA Workspace</p>
           <h1>AI Document Q&A Agent</h1>
         </div>
         <div className="header-metrics">
@@ -73,4 +73,3 @@ export default function App() {
     </main>
   );
 }
-

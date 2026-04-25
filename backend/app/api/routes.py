@@ -11,7 +11,6 @@ from ..citations import build_citations
 from ..config import get_settings
 from ..domain import SourceCitation
 from ..ingestion import build_source_document
-from ..retrieval import retrieve
 from ..store import document_store
 
 
@@ -30,6 +29,8 @@ def health() -> dict[str, str]:
         "status": "ok",
         "app": settings.app_name,
         "answer_provider": settings.answer_provider,
+        "documents": str(document_store.stats().document_count),
+        "chunks": str(document_store.stats().chunk_count),
     }
 
 
@@ -47,21 +48,30 @@ async def upload_document(file: UploadFile = File(...)) -> dict[str, object]:
     try:
         document = build_source_document(file.filename or "uploaded-document", content)
         chunks = chunk_document(document)
+        document_store.add_document(document, chunks)
     except (RuntimeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    document_store.add_document(document, chunks)
     return {
         "document_id": document.document_id,
         "filename": document.filename,
         "char_count": len(document.text),
         "chunk_count": len(chunks),
+        "store": document_store.stats().to_dict(),
     }
 
 
 @router.get("/documents")
 def list_documents() -> dict[str, object]:
-    return {"documents": document_store.list_documents()}
+    return {
+        "documents": document_store.list_documents(),
+        "store": document_store.stats().to_dict(),
+    }
+
+
+@router.get("/stats")
+def stats() -> dict[str, object]:
+    return document_store.stats().to_dict()
 
 
 @router.delete("/documents")
@@ -76,14 +86,14 @@ def ask_question(payload: QuestionRequest) -> dict[str, object]:
     if not chunks:
         raise HTTPException(status_code=400, detail="Upload at least one document first.")
 
-    hits = retrieve(payload.question, chunks, top_k=payload.top_k)
+    hits = document_store.search(payload.question, top_k=payload.top_k)
     citations = build_citations(hits)
 
     try:
         generator = get_answer_generator(get_settings())
         answer = generator.generate(payload.question, hits, citations)
     except Exception:
-        # Keep the demo resilient if optional provider setup is incomplete.
+        # A missing model key should not break retrieval or citation checks.
         answer = MockAnswerGenerator().generate(payload.question, hits, citations)
 
     return {
@@ -113,4 +123,3 @@ def _citation_to_dict(citation: SourceCitation) -> dict[str, object]:
         "end_char": citation.end_char,
         "score": citation.score,
     }
-

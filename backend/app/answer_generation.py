@@ -20,7 +20,7 @@ class AnswerGenerator(ABC):
 
 
 class MockAnswerGenerator(AnswerGenerator):
-    """Deterministic local generator used for demos, tests, and offline work."""
+    """Deterministic generator for local runs and repeatable tests."""
 
     def generate(
         self,
@@ -100,4 +100,3 @@ def get_answer_generator(settings: Settings) -> AnswerGenerator:
         return OpenAIAnswerGenerator(settings.openai_api_key, settings.openai_model)
 
     return MockAnswerGenerator()
-

@@ -1,6 +1,6 @@
 # AI Document Q&A Agent
 
-A portfolio-grade MVP for document question answering. Upload a PDF or text-like document, ask a question, and receive an answer with citations tied back to retrieved source chunks.
+Upload a PDF or text-like document, ask a question, and receive an answer with citations tied back to retrieved source chunks.
 
 The app runs locally with a deterministic mock answer generator by default, so it does not require paid API keys. If `OPENAI_API_KEY` is available, the backend can optionally use OpenAI for answer synthesis while keeping the same retrieval and citation pipeline.
 
@@ -13,7 +13,8 @@ flowchart LR
     F -->|ask question| A
     A --> I["Ingestion"]
     I --> C["Chunking"]
-    C --> S["In-memory document store"]
+    C --> S["Bounded document store"]
+    S --> X["In-process inverted index"]
     A --> R["Lexical retriever"]
     S --> R
     R --> P["Citation builder"]
@@ -115,9 +116,12 @@ python3 -m compileall backend/app backend/tests
 - `GET /health` checks service status and selected answer provider.
 - `POST /documents` uploads one document and indexes its chunks in memory.
 - `GET /documents` lists uploaded documents for the current backend process.
+- `GET /stats` reports corpus size and configured limits.
 - `DELETE /documents` clears the in-memory store.
 - `POST /ask` retrieves relevant chunks and returns an answer plus citations.
 
-## Production Notes
+## Scale Notes
 
-This MVP intentionally uses an in-memory store and lexical retrieval so it is easy to run and inspect locally. In production, swap the store and retriever boundaries for durable storage, background ingestion jobs, embeddings, vector search, access control, file virus scanning, observability, and stricter document parsing. The citation builder preserves chunk ids and source offsets so the answer surface can stay provenance-aware even after those upgrades.
+The service now keeps a bounded corpus and an inverted token index, so repeated questions do not re-tokenize and scan every chunk. That is still a single-process design, but it demonstrates the right boundary: the API depends on a store plus retriever contract, not on ad hoc globals.
+
+The next scale step would be durable document storage, background ingestion, embeddings or hybrid search, per-user access control, file scanning, and traces around upload, retrieval, and answer synthesis. The citation builder already preserves chunk ids and source offsets, so the answer shape can stay stable while the retrieval backend changes.

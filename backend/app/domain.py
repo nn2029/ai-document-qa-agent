@@ -1,8 +1,7 @@
 """Shared domain objects for the RAG pipeline.
 
-These dataclasses are deliberately independent of FastAPI/Pydantic so the
-chunking, retrieval, and citation code can be unit-tested without installing
-web framework dependencies.
+These dataclasses stay independent from FastAPI/Pydantic so retrieval and
+citation tests can run without loading the web app.
 """
 
 from dataclasses import dataclass, field
@@ -45,4 +44,3 @@ class SourceCitation:
     start_char: int
     end_char: int
     score: float
-

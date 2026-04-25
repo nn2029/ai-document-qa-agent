@@ -15,7 +15,9 @@ class Settings:
     openai_api_key: str | None = os.getenv("OPENAI_API_KEY") or None
     openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     max_upload_mb: int = int(os.getenv("MAX_UPLOAD_MB", "10"))
-    # Vercel preview URLs are injected as CORS_ORIGINS after deployment.
+    max_documents: int = int(os.getenv("MAX_DOCUMENTS", "50"))
+    max_chunks: int = int(os.getenv("MAX_CHUNKS", "3000"))
+    # Cloud frontends add their exact origins here; local defaults stay useful.
     cors_origins: tuple[str, ...] = _parse_origins(
         os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
     )
